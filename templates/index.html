@@ -3,14 +3,1114 @@
 <head>
     <meta charset="UTF-8">
     <title>Password Hash Visualizer</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232563eb'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z'/%3E%3C/svg%3E">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="/static/js/password-analyzer.js"></script>
+        <script src="/static/js/hashing-sandbox.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --background-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .navbar {
+            background: var(--surface-color);
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1.5rem;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .nav-btn {
+            background: var(--surface-color);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .nav-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .nav-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        
+        .main-content {
+            background: var(--surface-color);
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            text-align: center;
+        }
+        
+        .subtitle {
+            font-size: 1.125rem;
+            margin-bottom: 2rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        input[type="text"] {
+            width: 100%;
+            max-width: 500px;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            background: var(--surface-color);
+            color: var(--text-primary);
+            margin: 0 auto;
+            display: block;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary-color);
+        }
+        
+        .btn-secondary:hover {
+            background: #475569;
+        }
+        
+        .results {
+            display: none;
+            margin-top: 2rem;
+            background: var(--surface-color);
+            padding: 2rem;
+            border-radius: 1rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .attacker-profiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .profile-card {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border-left: 4px solid var(--primary-color);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-color);
+        }
+        
+        .profile-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .crack-time {
+            font-size: 1.25rem;
+            color: var(--danger-color);
+            font-weight: 600;
+        }
+        
+        .confidence-meter {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .confidence-level {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-left: 0.5rem;
+        }
+        
+        .high { background: var(--success-color); color: white; }
+        .medium { background: var(--warning-color); color: white; }
+        .low { background: var(--danger-color); color: white; }
+        
+        .chart-container {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin-top: 1rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-primary);
+        }
+        
+        .error {
+            background: var(--danger-color);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+        
+        .analysis-section {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .json-response {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        
+        .privacy-banner {
+            background: var(--success-color);
+            color: white;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .privacy-banner .icon {
+            font-size: 1.125rem;
+            margin-right: 0.5rem;
+        }
+        
+        .server-options {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 2px solid var(--danger-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .server-options h3 {
+            color: var(--danger-color);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .server-options p {
+            margin-bottom: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .opt-in-button {
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            margin: 0.25rem;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .opt-in-button:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .client-only {
+            background: var(--success-color);
+        }
+        
+        .client-only:hover {
+            background: #059669;
+        }
+        
+        .hashing-options {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .algorithm-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .algo-tab {
+            background: var(--surface-color);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+        
+        .algo-tab:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .algo-tab.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .algorithm-params {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .param-group {
+            margin-bottom: 1rem;
+        }
+        
+        .param-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .param-group input[type="range"] {
+            width: 100%;
+            margin: 0.5rem 0;
+            accent-color: var(--primary-color);
+        }
+        
+        .param-group span {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-left: 0.5rem;
+        }
+        
+        .param-group small {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .hashing-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .benchmark-chart {
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            margin: 1rem 0;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .performance-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .metric-card {
+            background: var(--surface-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .metric-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+        
+        .resistance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .algorithm-section {
+            background: var(--surface-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .algorithm-section h4 {
+            margin: 0 0 1rem 0;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .resistance-table {
+            overflow-x: auto;
+        }
+        
+        .resistance-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+        
+        .resistance-table th,
+        .resistance-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .resistance-table th {
+            background: var(--surface-color);
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .resistance-table td {
+            color: var(--text-primary);
+        }
+        
+        .progress-container {
+            margin: 1rem 0;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 1rem;
+            background: var(--border-color);
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 0.5rem;
+        }
+        
+        .progress-text {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .benchmark-progress {
+            background: var(--surface-color);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 0.5rem 0;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .benchmark-progress h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        /* Footer Styles */
+        .footer {
+            background: var(--surface-color);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem 0;
+            margin-top: 3rem;
+            text-align: center;
+        }
+        
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+        
+        .footer p {
+            margin: 0.5rem 0;
+            color: var(--text-secondary);
+        }
+        
+        .footer strong {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .footer-subtitle {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
-    <h1 style="color:antiquewhite;">Welcome to my Password Hash Visualizer!</h1>
-    <h1>Enter your password</h1>
-    <form action="/analyse" method="post">
-        <label for="password">Password :</label>
-        <input type="text" name="password"/>
-        <input type="submit" value="submit">
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Password Hash Visualizer</div>
+            <div class="nav-buttons">
+                <button class="nav-btn active" onclick="showSection('analyze')">Analyze Password</button>
+                <button class="nav-btn" onclick="showSection('crack')">Crack Time Estimator</button>
+                <button class="nav-btn" onclick="showSection('hashing')">Hashing Sandbox</button>
+            </div>
+        </div>
+    </nav>
+
+        <div class="privacy-banner">
+            <strong>Client-only analysis by default</strong> — Your password never leaves your device. 
+            Server analysis available only when you explicitly opt-in.
+        </div>
+
+        <div class="container">
+        <div id="analyze-section" class="main-content">
+            <h1>Password Analysis</h1>
+            <p class="subtitle">Get detailed entropy analysis and password strength assessment</p>
+            
+            <form id="analyzeForm">
+                <div class="form-group">
+                    <label for="password">Enter your password:</label>
+                    <input type="text" id="password" name="password" placeholder="Type your password here..." required>
+                </div>
+                <button type="submit" class="btn client-only">Analyze Locally (Client-Side)</button>
+            </form>
+
+
+            <div id="analyze-loading" class="loading" style="display: none;">
+                <h3>Analyzing your password...</h3>
+                <p>Calculating entropy and security metrics...</p>
+            </div>
+
+            <div id="analyze-error" class="error" style="display: none;"></div>
+
+            <div id="analyze-results" class="results">
+                <h2>Analysis Results</h2>
+                <div id="analyze-content"></div>
+            </div>
+        </div>
+
+        <div id="crack-section" class="main-content" style="display: none;">
+            <h1>Crack Time Estimator</h1>
+            <p class="subtitle">See how long it would take different attackers to crack your password</p>
+            
+            <form id="crackForm">
+                <div class="form-group">
+                    <label for="crack-password">Enter your password:</label>
+                    <input type="text" id="crack-password" name="password" placeholder="Type your password here..." required>
+                </div>
+                <button type="submit" class="btn client-only">Analyze Locally (Client-Side)</button>
+            </form>
+
+
+            <div id="crack-loading" class="loading" style="display: none;">
+                <h3>Analyzing crack time...</h3>
+                <p>Calculating entropy and crack times for different attacker profiles...</p>
+            </div>
+
+            <div id="crack-error" class="error" style="display: none;"></div>
+
+            <div id="crack-results" class="results">
+                <h2>Crack Time Analysis</h2>
+                
+                <div class="confidence-meter">
+                    <h3>Confidence Level</h3>
+                    <p>Based on pattern detection: <span id="confidenceLevel" class="confidence-level"></span></p>
+                    <p id="confidenceReason"></p>
+                </div>
+
+                <div class="attacker-profiles" id="attackerProfiles">
+                    <!-- Attacker profiles will be populated here -->
+                </div>
+
+                <div class="chart-container">
+                    <h3>Visual Comparison</h3>
+                    <canvas id="crackTimeChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="hashing-section" class="main-content" style="display: none;">
+            <h1>Hashing Sandbox & Benchmark</h1>
+            <p class="subtitle">Generate and benchmark bcrypt, Argon2, and scrypt hashes with configurable parameters</p>
+            
+            <form id="hashingForm">
+                <div class="form-group">
+                    <label for="hash-password">Enter password to hash:</label>
+                    <input type="text" id="hash-password" name="password" placeholder="Type your password here..." required>
+                </div>
+                
+                <div class="hashing-options">
+                    <h3>Algorithm Selection</h3>
+                    <div class="algorithm-tabs">
+                        <button type="button" class="algo-tab active" onclick="selectAlgorithm('bcrypt')">bcrypt</button>
+                        <button type="button" class="algo-tab" onclick="selectAlgorithm('argon2')">Argon2</button>
+                        <button type="button" class="algo-tab" onclick="selectAlgorithm('scrypt')">scrypt</button>
+                    </div>
+                </div>
+
+                <div id="bcrypt-params" class="algorithm-params">
+                    <h3>bcrypt Parameters</h3>
+                    <div class="param-group">
+                        <label for="bcrypt-rounds">Rounds (4-31):</label>
+                        <input type="range" id="bcrypt-rounds" min="4" max="31" value="12" oninput="updateBcryptDisplay()">
+                        <span id="bcrypt-rounds-display">12</span>
+                        <small>Higher rounds = more secure but slower</small>
+                    </div>
+                </div>
+
+                <div id="argon2-params" class="algorithm-params" style="display: none;">
+                    <h3>Argon2 Parameters</h3>
+                    <div class="param-group">
+                        <label for="argon2-memory">Memory (MB):</label>
+                        <input type="range" id="argon2-memory" min="1" max="1024" value="64" oninput="updateArgon2Display()">
+                        <span id="argon2-memory-display">64</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="argon2-iterations">Iterations:</label>
+                        <input type="range" id="argon2-iterations" min="1" max="100" value="3" oninput="updateArgon2Display()">
+                        <span id="argon2-iterations-display">3</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="argon2-parallelism">Parallelism:</label>
+                        <input type="range" id="argon2-parallelism" min="1" max="16" value="4" oninput="updateArgon2Display()">
+                        <span id="argon2-parallelism-display">4</span>
+                    </div>
+                </div>
+
+                <div id="scrypt-params" class="algorithm-params" style="display: none;">
+                    <h3>scrypt Parameters</h3>
+                    <div class="param-group">
+                        <label for="scrypt-n">N (CPU/Memory cost):</label>
+                        <input type="range" id="scrypt-n" min="1024" max="1048576" value="16384" oninput="updateScryptDisplay()">
+                        <span id="scrypt-n-display">16384</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="scrypt-r">r (Block size):</label>
+                        <input type="range" id="scrypt-r" min="1" max="32" value="8" oninput="updateScryptDisplay()">
+                        <span id="scrypt-r-display">8</span>
+                    </div>
+                    <div class="param-group">
+                        <label for="scrypt-p">p (Parallelization):</label>
+                        <input type="range" id="scrypt-p" min="1" max="16" value="1" oninput="updateScryptDisplay()">
+                        <span id="scrypt-p-display">1</span>
+                    </div>
+                </div>
+
+                <div class="hashing-buttons">
+                    <button type="submit" class="btn client-only">Generate Hash</button>
+                    <button type="button" class="btn btn-secondary" onclick="runBenchmark()">Run Benchmark</button>
+                </div>
     </form>
+
+            <div id="hashing-loading" class="loading" style="display: none;">
+                <h3>Generating hash...</h3>
+                <p>This may take a moment depending on the parameters...</p>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="hashing-progress"></div>
+                    </div>
+                    <div class="progress-text" id="hashing-progress-text">0%</div>
+                </div>
+            </div>
+
+            <div id="hashing-error" class="error" style="display: none;"></div>
+
+            <div id="hashing-results" class="results">
+                <h2>Hash Results</h2>
+                <div id="hash-content"></div>
+            </div>
+
+            <div id="benchmark-results" class="results" style="display: none;">
+                <h2>Benchmark Results</h2>
+                <div id="benchmark-content"></div>
+            </div>
+        </div>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2025 <strong>Nabil Chaibi</strong> - Password Hash Visualizer</p>
+                <p class="footer-subtitle">A  password analysis tool</p>
+            </div>
+        </footer>
+
+        <script>
+        const analyzer = new PasswordAnalyzer();
+        function showSection(section) {
+            document.getElementById('analyze-section').style.display = 'none';
+            document.getElementById('crack-section').style.display = 'none';
+            document.getElementById('hashing-section').style.display = 'none';
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if (section === 'analyze') {
+                document.getElementById('analyze-section').style.display = 'block';
+                document.querySelectorAll('.nav-btn')[0].classList.add('active');
+            } else if (section === 'crack') {
+                document.getElementById('crack-section').style.display = 'block';
+                document.querySelectorAll('.nav-btn')[1].classList.add('active');
+            } else if (section === 'hashing') {
+                document.getElementById('hashing-section').style.display = 'block';
+                document.querySelectorAll('.nav-btn')[2].classList.add('active');
+            }
+        }
+
+
+        document.getElementById('analyzeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('password').value;
+            const loading = document.getElementById('analyze-loading');
+            const results = document.getElementById('analyze-results');
+            const error = document.getElementById('analyze-error');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const data = analyzer.analyzePassword(password);
+                
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                
+                displayAnalyzeResults(data);
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = 'Error: ' + err.message;
+            }
+        });
+
+        document.getElementById('crackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('crack-password').value;
+            const loading = document.getElementById('crack-loading');
+            const results = document.getElementById('crack-results');
+            const error = document.getElementById('crack-error');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                const analysis = analyzer.analyzePassword(password);
+                const data = {
+                    password_length: analysis.entropyAnalysis.passwordLength,
+                    entropy_bits: analysis.entropyAnalysis.entropyBits,
+                    strength_rating: analysis.entropyAnalysis.strengthRating,
+                    attacker_profiles: analysis.crackTimeEstimates,
+                    confidence_level: analysis.patternAnalysis.confidenceLevel,
+                    confidence_reason: analysis.patternAnalysis.reason
+                };
+                
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                
+                displayCrackResults(data);
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = 'Error: ' + err.message;
+            }
+        });
+
+        function displayAnalyzeResults(data) {
+            const content = document.getElementById('analyze-content');
+            
+            const isClientSide = data.entropyAnalysis;
+            const entropyData = isClientSide ? data.entropyAnalysis : data.password_analysis;
+            const patternData = isClientSide ? data.patternAnalysis : null;
+            const crackTimes = isClientSide ? data.crackTimeEstimates : data.password_analysis.crack_time_estimates;
+            
+            let analysisMode = 'Client-Side Analysis';
+            
+            content.innerHTML = `
+                <div class="analysis-section">
+                    <h3>${analysisMode}</h3>
+                    <p><strong>Original Password:</strong> ${data.originalPassword || data.original_password}</p>
+                    <p><strong>Hashed Password:</strong> ${data.hashedPassword || data.hashed_password}</p>
+                </div>
+                
+                <div class="analysis-section">
+                    <h3>Entropy Analysis</h3>
+                    <p><strong>Password Length:</strong> ${entropyData.passwordLength || entropyData.password_length} characters</p>
+                    <p><strong>Character Types Used:</strong> ${(entropyData.typesUsed || entropyData.types_used).join(', ')}</p>
+                    <p><strong>Entropy Bits:</strong> ${entropyData.entropyBits || entropyData.entropy_bits}</p>
+                    <p><strong>Strength Rating:</strong> ${entropyData.strengthRating || entropyData.strength_rating}</p>
+                    <p><strong>Missing Types:</strong> ${(entropyData.missingTypes || entropyData.missing_types).length > 0 ? (entropyData.missingTypes || entropyData.missing_types).join(', ') : 'None'}</p>
+                </div>
+                
+                ${patternData ? `
+                <div class="analysis-section">
+                    <h3>Pattern Detection</h3>
+                    <p><strong>Confidence Level:</strong> <span class="confidence-level ${patternData.confidenceLevel.toLowerCase()}">${patternData.confidenceLevel}</span></p>
+                    <p><strong>Reason:</strong> ${patternData.reason}</p>
+                </div>
+                ` : ''}
+                
+                <div class="analysis-section">
+                    <h3>Crack Time Estimates</h3>
+                    <div class="json-response">${JSON.stringify(crackTimes, null, 2)}</div>
+                </div>
+            `;
+        }
+
+        function displayCrackResults(data) {
+            const confidenceLevel = document.getElementById('confidenceLevel');
+            const confidenceReason = document.getElementById('confidenceReason');
+            
+            confidenceLevel.textContent = data.confidence_level;
+            confidenceLevel.className = 'confidence-level ' + data.confidence_level.toLowerCase();
+            confidenceReason.textContent = data.confidence_reason;
+
+            const profilesContainer = document.getElementById('attackerProfiles');
+            profilesContainer.innerHTML = '';
+            
+            data.attacker_profiles.forEach(profile => {
+                const profileCard = document.createElement('div');
+                profileCard.className = 'profile-card';
+                profileCard.innerHTML = `
+                    <div class="profile-name">${profile.name}</div>
+                    <div class="crack-time">${profile.crackTime || profile.crack_time || 'Calculating...'}</div>
+                    <div style="color: #ccc; font-size: 0.9em;">${profile.description}</div>
+                `;
+                profilesContainer.appendChild(profileCard);
+            });
+
+            createChart(data.attacker_profiles);
+        }
+
+        let crackTimeChartInstance = null;
+
+        function createChart(profiles) {
+            const ctx = document.getElementById('crackTimeChart').getContext('2d');
+            
+            if (crackTimeChartInstance) {
+                crackTimeChartInstance.destroy();
+                crackTimeChartInstance = null;
+            }
+            const chartData = profiles.map(profile => {
+                const timeStr = profile.crackTime || profile.crack_time || '0 seconds';
+                let value = 1;
+                
+                if (timeStr.includes('years')) {
+                    value = parseFloat(timeStr) * 365 * 24 * 60 * 60;
+                } else if (timeStr.includes('days')) {
+                    value = parseFloat(timeStr) * 24 * 60 * 60;
+                } else if (timeStr.includes('hours')) {
+                    value = parseFloat(timeStr) * 60 * 60;
+                } else if (timeStr.includes('minutes')) {
+                    value = parseFloat(timeStr) * 60;
+                } else {
+                    value = parseFloat(timeStr);
+                }
+                
+                return {
+                    name: profile.name,
+                    value: Math.log10(value),
+                    original: profile.crackTime || profile.crack_time
+                };
+            });
+
+            crackTimeChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.map(d => d.name),
+                    datasets: [{
+                        label: 'Crack Time (log scale)',
+                        data: chartData.map(d => d.value),
+                        backgroundColor: [
+                            '#e74c3c',
+                            '#f39c12', 
+                            '#e67e22',
+                            '#d35400',
+                            '#c0392b'
+                        ],
+                        borderColor: [
+                            '#c0392b',
+                            '#e67e22',
+                            '#d35400',
+                            '#a93226',
+                            '#922b21'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Crack Time Comparison (Log Scale)',
+                            color: '#fff'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const index = context.dataIndex;
+                                    return 'Time: ' + chartData[index].original;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Log Scale (seconds)',
+                                color: '#fff'
+                            },
+                            ticks: {
+                                color: '#fff'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function selectAlgorithm(algorithm) {
+            hashingSandbox.selectAlgorithm(algorithm);
+        }
+
+        function updateBcryptDisplay() {
+            hashingSandbox.updateBcryptDisplay();
+        }
+
+        function updateArgon2Display() {
+            hashingSandbox.updateArgon2Display();
+        }
+
+        function updateScryptDisplay() {
+            hashingSandbox.updateScryptDisplay();
+        }
+
+        async function generateBcryptHash(password, rounds) {
+            return await hashingSandbox.generateBcryptHash(password, rounds);
+        }
+
+        async function generateArgon2Hash(password, memory, iterations, parallelism) {
+            return await hashingSandbox.generateArgon2Hash(password, memory, iterations, parallelism);
+        }
+
+        async function generateScryptHash(password, n, r, p) {
+            return await hashingSandbox.generateScryptHash(password, n, r, p);
+        }
+
+        document.getElementById('hashingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const password = document.getElementById('hash-password').value;
+            const loading = document.getElementById('hashing-loading');
+            const results = document.getElementById('hashing-results');
+            const error = document.getElementById('hashing-error');
+            
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            error.style.display = 'none';
+            
+            try {
+                let hashResult;
+                
+                if (hashingSandbox.currentAlgorithm === 'bcrypt') {
+                    const rounds = parseInt(document.getElementById('bcrypt-rounds').value);
+                    hashResult = await generateBcryptHash(password, rounds, (progress) => {
+                        hashingSandbox.updateHashProgress(progress);
+                    });
+                } else if (hashingSandbox.currentAlgorithm === 'argon2') {
+                    const memory = parseInt(document.getElementById('argon2-memory').value);
+                    const iterations = parseInt(document.getElementById('argon2-iterations').value);
+                    const parallelism = parseInt(document.getElementById('argon2-parallelism').value);
+                    hashResult = await generateArgon2Hash(password, memory, iterations, parallelism, (progress) => {
+                        hashingSandbox.updateHashProgress(progress);
+                    });
+                } else if (hashingSandbox.currentAlgorithm === 'scrypt') {
+                    const n = parseInt(document.getElementById('scrypt-n').value);
+                    const r = parseInt(document.getElementById('scrypt-r').value);
+                    const p = parseInt(document.getElementById('scrypt-p').value);
+                    hashResult = await generateScryptHash(password, n, r, p, (progress) => {
+                        hashingSandbox.updateHashProgress(progress);
+                    });
+                }
+                
+                loading.style.display = 'none';
+                results.style.display = 'block';
+                
+                hashingSandbox.displayHashResults(hashResult, hashingSandbox.currentAlgorithm);
+                
+            } catch (err) {
+                loading.style.display = 'none';
+                error.style.display = 'block';
+                error.textContent = 'Error: ' + err.message;
+            }
+        });
+
+        async function runBenchmark() {
+            await hashingSandbox.runBenchmark();
+        }
+
+    </script>
 </body>
 </html>
