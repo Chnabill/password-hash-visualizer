@@ -156,6 +156,6 @@ password-hash-visualizer/
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Links---
+
 
 **Privacy Notice**: This application is designed with privacy-first principles. Your passwords never leave your device - all analysis happens 100% client-side.
